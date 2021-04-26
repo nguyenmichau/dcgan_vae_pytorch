@@ -143,9 +143,9 @@ class _Encoder(nn.Module):
         self.encoder.add_module('input-relu',nn.LeakyReLU(0.2, inplace=True))
         for i in range(n-3):
             # state size. (ngf) x 32 x 32
-            self.encoder.add_module('pyramid.{0}-{1}.conv'.format(ngf*2**i, ngf * 2**(i+1)), nn.Conv2d(ngf*2**(i), ngf * 2**(i+1), 4, 2, 1, bias=False))
-            self.encoder.add_module('pyramid.{0}.batchnorm'.format(ngf * 2**(i+1)), nn.BatchNorm2d(ngf * 2**(i+1)))
-            self.encoder.add_module('pyramid.{0}.relu'.format(ngf * 2**(i+1)), nn.LeakyReLU(0.2, inplace=True))
+            self.encoder.add_module('pyramid_{0}-{1}_conv'.format(ngf*2**i, ngf * 2**(i+1)), nn.Conv2d(ngf*2**(i), ngf * 2**(i+1), 4, 2, 1, bias=False))
+            self.encoder.add_module('pyramid_{0}_batchnorm'.format(ngf * 2**(i+1)), nn.BatchNorm2d(ngf * 2**(i+1)))
+            self.encoder.add_module('pyramid_{0}_relu'.format(ngf * 2**(i+1)), nn.LeakyReLU(0.2, inplace=True))
 
         # state size. (ngf*8) x 4 x 4
 
@@ -176,23 +176,23 @@ class _netG(nn.Module):
         # state size. (ngf * 2**(n-3)) x 4 x 4
 
         for i in range(n-3, 0, -1):
-            self.decoder.add_module('pyramid.{0}-{1}.conv'.format(ngf*2**i, ngf * 2**(i-1)),nn.ConvTranspose2d(ngf * 2**i, ngf * 2**(i-1), 4, 2, 1, bias=False))
-            self.decoder.add_module('pyramid.{0}.batchnorm'.format(ngf * 2**(i-1)), nn.BatchNorm2d(ngf * 2**(i-1)))
-            self.decoder.add_module('pyramid.{0}.relu'.format(ngf * 2**(i-1)), nn.LeakyReLU(0.2, inplace=True))
+            self.decoder.add_module('pyramid_{0}-{1}_conv'.format(ngf*2**i, ngf * 2**(i-1)),nn.ConvTranspose2d(ngf * 2**i, ngf * 2**(i-1), 4, 2, 1, bias=False))
+            self.decoder.add_module('pyramid_{0}_batchnorm'.format(ngf * 2**(i-1)), nn.BatchNorm2d(ngf * 2**(i-1)))
+            self.decoder.add_module('pyramid_{0}_relu'.format(ngf * 2**(i-1)), nn.LeakyReLU(0.2, inplace=True))
 
         self.decoder.add_module('ouput-conv', nn.ConvTranspose2d(    ngf,      nc, 4, 2, 1, bias=False))
         self.decoder.add_module('output-tanh', nn.Tanh())
 
 
     def forward(self, input):
-        if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.encoder, input, range(self.ngpu))
-            output = nn.parallel.data_parallel(self.sampler, output, range(self.ngpu))
-            output = nn.parallel.data_parallel(self.decoder, output, range(self.ngpu))
-        else:
-            output = self.encoder(input)
-            output = self.sampler(output)
-            output = self.decoder(output)
+        # if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+        #     output = nn.parallel.data_parallel(self.encoder, input, range(self.ngpu))
+        #     output = nn.parallel.data_parallel(self.sampler, output, range(self.ngpu))
+        #     output = nn.parallel.data_parallel(self.decoder, output, range(self.ngpu))
+        # else:
+        output = self.encoder(input)
+        output = self.sampler(output)
+        output = self.decoder(output)
         return output
     
     def make_cuda(self):
@@ -224,19 +224,19 @@ class _netD(nn.Module):
 
         # state size. (ndf) x 32 x 32
         for i in range(n-3):
-            self.main.add_module('pyramid.{0}-{1}.conv'.format(ngf*2**(i), ngf * 2**(i+1)), nn.Conv2d(ndf * 2 ** (i), ndf * 2 ** (i+1), 4, 2, 1, bias=False))
-            self.main.add_module('pyramid.{0}.batchnorm'.format(ngf * 2**(i+1)), nn.BatchNorm2d(ndf * 2 ** (i+1)))
-            self.main.add_module('pyramid.{0}.relu'.format(ngf * 2**(i+1)), nn.LeakyReLU(0.2, inplace=True))
+            self.main.add_module('pyramid_{0}-{1}_conv'.format(ngf*2**(i), ngf * 2**(i+1)), nn.Conv2d(ndf * 2 ** (i), ndf * 2 ** (i+1), 4, 2, 1, bias=False))
+            self.main.add_module('pyramid_{0}_batchnorm'.format(ngf * 2**(i+1)), nn.BatchNorm2d(ndf * 2 ** (i+1)))
+            self.main.add_module('pyramid_{0}_relu'.format(ngf * 2**(i+1)), nn.LeakyReLU(0.2, inplace=True))
 
         self.main.add_module('output-conv', nn.Conv2d(ndf * 2**(n-3), 1, 4, 1, 0, bias=False))
         self.main.add_module('output-sigmoid', nn.Sigmoid())
         
 
     def forward(self, input):
-        if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
-        else:
-            output = self.main(input)
+        # if isinstance(input.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+        #     output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
+        # else:
+        output = self.main(input)
 
         return output.view(-1, 1)
 

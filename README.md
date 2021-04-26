@@ -5,9 +5,21 @@ this code is based on [pytorch/examples](https://github.com/pytorch/examples) an
 
 The original artical can be found [here](https://arxiv.org/abs/1512.09300)
 ## Requirements
-* torch
-* torchvision
+* torch  version 0.4.x (if not there wont be torch.legacy)
+
+```
+conda install torch=0.4.1 -c pytorch
+```
+
+* torchvision ver 0.2.2
+```
+conda install torchvision=0.2.1 -c pytorch
+```
+
 * visdom
+```
+conda install -c conda-forge visdom
+```
 * (optional) lmdb
 
 ## Usage
